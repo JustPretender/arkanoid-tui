@@ -1,0 +1,19 @@
+[package]
+name = "arkanoid-tui"
+version = "0.1.1"
+edition = "2021"
+description = "Arkanoid built with Ratatui"
+license = "MIT OR Apache-2.0"
+exclude = ["static/*"]
+categories = ["games", "command-line-utilities"]
+readme = "README.md"
+homepage = "https://github.com/JustPretender/arkanoid-tui"
+repository = "https://github.com/JustPretender/arkanoid-tui"
+
+
+[dependencies]
+anyhow = "1.0.86"
+clap = { version = "4.5.7", features = ["derive"] }
+crossterm = "0.27.0"
+rand = "0.8.5"
+ratatui = "0.26.3"
