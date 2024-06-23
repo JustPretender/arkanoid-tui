@@ -108,7 +108,13 @@ mod tests {
 
     #[test]
     fn test_coordinates() {
-        let rect = Rectf64::new(10.0, 20.0, 30.0, 40.0);
+        let rect = Rectf64 {
+            x: 10.,
+            y: 20.,
+            width: 30.,
+            height: 40.,
+        };
+
         assert_eq!(rect.left(), 10.0);
         assert_eq!(rect.right(), 40.0);
         assert_eq!(rect.top(), 60.0);
