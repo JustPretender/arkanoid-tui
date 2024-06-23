@@ -2,7 +2,7 @@
 
 [![Build](https://github.com/keepsimple1/mdns-sd/actions/workflows/build.yml/badge.svg)](https://github.com/JustPretender/arkanoid-tui/actions)[![Rust version: 1.74+](https://img.shields.io/badge/rust%20version-1.74-orange)](https://blog.rust-lang.org/2023/11/16/Rust-1.74.0.html)
 
-This a simple _Arkanoid_ game built with [Ratatui](https://ratatui.rs/).
+This is a simple _Arkanoid_ game built with [Ratatui](https://ratatui.rs/).
 
 ## Preview
 
