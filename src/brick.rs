@@ -33,13 +33,12 @@ impl EllasticCollision for Brick {
     ///
     /// # Returns
     /// `true` if a collision occurred, `false` otherwise.
-    fn collide(&mut self, ball: &mut Ball) -> bool {
-        if ball.intersects(&self.area) {
-            ball.bouncev();
-            true
-        } else {
-            false
-        }
+    fn collide(&self, ball: &mut Ball) {
+        ball.bouncev();
+    }
+
+    fn area(&self) -> Rectf64 {
+        self.area.clone()
     }
 }
 
@@ -56,6 +55,6 @@ impl Shape for Brick {
             width: self.area.width - 1.,
             color: Color::LightYellow,
         }
-            .draw(painter);
+        .draw(painter);
     }
 }

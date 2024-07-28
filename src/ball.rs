@@ -1,3 +1,5 @@
+#[cfg(feature = "debug")]
+use crate::paddle::Direction;
 use crate::rectf64::Rectf64;
 use ratatui::style::Color;
 use ratatui::widgets::canvas::{Circle, Painter, Shape};
@@ -39,22 +41,57 @@ impl Ball {
         }
     }
 
-    /// Moves the ball based on its velocity and the given time delta.
-    ///
-    /// # Parameters
-    /// - `dt`: The time delta by which to move the ball.
-    pub fn mov(&mut self, dt: f64) {
-        self.x += self.vx * dt;
-        self.y += self.vy * dt;
+    /// Moves the ball based on its velocity
+    pub fn mov(&mut self) {
+        #[cfg(feature = "debug")]
+        let old_x = self.x;
+        #[cfg(feature = "debug")]
+        let old_y = self.y;
+
+        self.x += self.vx;
+        self.y += self.vy;
+
+        #[cfg(feature = "debug")]
+        tracing::trace!(
+            "Moved the ball (vx: {}, vy: {}): {},{} -> {},{}",
+            self.vx,
+            self.vy,
+            old_x,
+            old_y,
+            self.x,
+            self.y
+        );
+    }
+
+    #[cfg(feature = "debug")]
+    pub fn mov_dir(&mut self, direction: Direction) {
+        match direction {
+            Direction::Left => {
+                self.x -= 1.;
+            }
+            Direction::Right => {
+                self.x += 1.;
+            }
+            Direction::Up => {
+                self.y += 1.;
+            }
+            Direction::Down => {
+                self.y -= 1.;
+            }
+        }
     }
 
     /// Reverses the ball's velocity along the y-axis, simulating a vertical bounce.
     pub fn bouncev(&mut self) {
+        #[cfg(feature = "debug")]
+        tracing::trace!("Bounce the ball vertically: {} -> {}", self.vy, -self.vy,);
         self.vy = -self.vy;
     }
 
     /// Reverses the ball's velocity along the x-axis, simulating a horizontal bounce.
     pub fn bounceh(&mut self) {
+        #[cfg(feature = "debug")]
+        tracing::trace!("Bounce the ball horizontally: {} -> {}", self.vx, -self.vx,);
         self.vx = -self.vx;
     }
 
@@ -63,30 +100,38 @@ impl Ball {
     /// # Parameters
     /// - `dvx`: The change in velocity along the x-axis.
     pub fn dvx(&mut self, dvx: f64) {
+        #[cfg(feature = "debug")]
+        tracing::trace!(
+            "Increase the ball's horizontal velocity: {} -> {}",
+            self.vx,
+            self.vx + dvx
+        );
         self.vx += dvx;
     }
 
-    /// Checks if the ball intersects with a given rectangular area.
-    ///
-    /// # Parameters
-    /// - `area`: The rectangular area to check for intersection.
-    ///
-    /// # Returns
-    /// `true` if the ball intersects with the area, `false` otherwise.
-    ///
-    /// # Reference
-    /// Uses the algorithm described in [this Stack Overflow answer](https://stackoverflow.com/a/1879223).
-    pub fn intersects(&self, area: &Rectf64) -> bool {
+    pub fn dsquared<EC: EllasticCollision>(&self, shape: &EC) -> f64 {
+        let area = shape.area();
         let closest_x = f64::clamp(self.x, area.left(), area.right());
         let closest_y = f64::clamp(self.y, area.bottom(), area.top());
         let dx = self.x - closest_x;
         let dy = self.y - closest_y;
-        dx.powi(2) + dy.powi(2) < self.radius.powi(2)
+        dx.powi(2) + dy.powi(2)
+    }
+
+    pub fn collision<EC: EllasticCollision>(&mut self, shape: &EC) -> bool {
+        if self.dsquared(shape) < self.radius.powi(2) {
+            #[cfg(feature = "debug")]
+            tracing::debug!("The ball {self:?} collides with {shape:?}.");
+            shape.collide(self);
+            true
+        } else {
+            false
+        }
     }
 }
 
 /// A trait for objects that can collide elastically with a `Ball`.
-pub trait EllasticCollision {
+pub trait EllasticCollision: std::fmt::Debug {
     /// Checks for and handles a collision with the given `Ball`.
     ///
     /// # Parameters
@@ -94,7 +139,8 @@ pub trait EllasticCollision {
     ///
     /// # Returns
     /// `true` if a collision occurred, `false` otherwise.
-    fn collide(&mut self, ball: &mut Ball) -> bool;
+    fn collide(&self, ball: &mut Ball);
+    fn area(&self) -> Rectf64;
 }
 
 impl Shape for Ball {
@@ -110,7 +156,7 @@ impl Shape for Ball {
                 radius: self.radius * k,
                 color: Color::LightRed,
             }
-                .draw(painter);
+            .draw(painter);
         }
     }
 }

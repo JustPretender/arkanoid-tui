@@ -3,15 +3,20 @@ use crate::rectf64::Rectf64;
 use ratatui::prelude::Color;
 use ratatui::widgets::canvas::{Painter, Shape};
 
+#[derive(Debug, Default)]
+pub struct Wall {
+    area: Rectf64
+}
+
 /// Represents the walls of a game area, consisting of left, right, and top walls.
 #[derive(Debug, Default)]
 pub struct Walls {
     /// The rectangular area representing the left wall.
-    left: Rectf64,
+    pub left: Wall,
     /// The rectangular area representing the right wall.
-    right: Rectf64,
+    pub right: Wall,
     /// The rectangular area representing the top wall.
-    top: Rectf64,
+    pub top: Wall,
     /// The color of the walls.
     color: Color,
 }
@@ -28,11 +33,16 @@ impl Walls {
     /// # Returns
     /// A new `Walls` instance with the specified areas and color.
     pub fn new(left: Rectf64, right: Rectf64, top: Rectf64, color: Color) -> Self {
-        Self { left, right, top, color }
+        Self {
+            left: Wall { area: left},
+            right: Wall { area: right},
+            top: Wall { area: top },
+            color,
+        }
     }
 }
 
-impl EllasticCollision for Walls {
+impl EllasticCollision for Wall {
     /// Checks for and handles a collision with the given `Ball`.
     ///
     /// If the ball intersects with any of the walls, the ball's velocity is reversed
@@ -43,19 +53,17 @@ impl EllasticCollision for Walls {
     ///
     /// # Returns
     /// `true` if a collision occurred, `false` otherwise.
-    fn collide(&mut self, ball: &mut Ball) -> bool {
-        if ball.intersects(&self.left) {
-            ball.bounceh();
-            true
-        } else if ball.intersects(&self.top) {
-            ball.bouncev();
-            true
-        } else if ball.intersects(&self.right) {
-            ball.bounceh();
-            true
+    fn collide(&self, ball: &mut Ball)  {
+        if self.area.height < self.area.width {
+            ball.bouncev()
         } else {
-            false
+            ball.bounceh()
         }
+
+    }
+
+    fn area(&self) -> Rectf64 {
+        self.area.clone()
     }
 }
 
@@ -65,8 +73,8 @@ impl Shape for Walls {
     /// # Parameters
     /// - `painter`: The painter to draw the walls on.
     fn draw(&self, painter: &mut Painter) {
-        self.left.draw(painter, self.color);
-        self.right.draw(painter, self.color);
-        self.top.draw(painter, self.color);
+        self.left.area.draw(painter, self.color);
+        self.right.area.draw(painter, self.color);
+        self.top.area.draw(painter, self.color);
     }
 }

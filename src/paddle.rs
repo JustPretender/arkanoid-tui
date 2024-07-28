@@ -9,6 +9,10 @@ pub enum Direction {
     #[default]
     Left,
     Right,
+    #[cfg(feature = "debug")]
+    Up,
+    #[cfg(feature = "debug")]
+    Down,
 }
 
 /// Represents the paddle in the game.
@@ -68,6 +72,8 @@ impl Paddle {
                     self.area.x = self.max_x - self.area.width;
                 }
             }
+            #[cfg(feature = "debug")]
+            _ => unreachable!(),
         }
         self.dir = direction;
     }
@@ -84,20 +90,21 @@ impl EllasticCollision for Paddle {
     ///
     /// # Returns
     /// `true` if a collision occurred, `false` otherwise.
-    fn collide(&mut self, ball: &mut Ball) -> bool {
-        if ball.intersects(&self.area) {
-            // Angular factor * mass factor * pad horizontal speed * friction
-            // https://stackoverflow.com/questions/8063696/arkanoid-physics-projectile-physics-simulation
-            let vx = match self.dir {
-                Direction::Left => -1.,
-                Direction::Right => 1.,
-            } * self.vx;
-            ball.dvx(2. * 0.7 * vx * 0.3);
-            ball.bouncev();
-            true
-        } else {
-            false
-        }
+    fn collide(&self, ball: &mut Ball) {
+        // Angular factor * mass factor * pad horizontal speed * friction
+        // https://stackoverflow.com/questions/8063696/arkanoid-physics-projectile-physics-simulation
+        let vx = match self.dir {
+            Direction::Left => -1.,
+            Direction::Right => 1.,
+            #[cfg(feature = "debug")]
+            _ => unreachable!(),
+        } * self.vx;
+        ball.dvx(1.5 * 0.7 * vx * 0.3);
+        ball.bouncev();
+    }
+
+    fn area(&self) -> Rectf64 {
+        self.area.clone()
     }
 }
 

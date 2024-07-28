@@ -16,6 +16,14 @@ This is a simple _Arkanoid_ game built with [Ratatui](https://ratatui.rs/).
   [this](https://www.rust-lang.org/tools/install) guide.
 * run `cargo install arkanoid-tui`
 
+### Debugging
+
+Debugging and tracing can be enabled by turning the *debug* feature on:
+```
+RUST_LOG=debug cargo run -F debug -- --tracing
+```
+The output will be available in `tracing.log`
+
 ## License
 
 Licensed under either of

@@ -1,4 +1,4 @@
-use crate::ball::{Ball, EllasticCollision};
+use crate::ball::Ball;
 use crate::bottom::Bottom;
 use crate::brick::Brick;
 use crate::letters::Word;
@@ -38,8 +38,10 @@ pub enum GameState {
 pub enum GameEvent {
     /// Event to move the paddle in a specified direction.
     MovePad { direction: Direction },
+    #[cfg(feature = "debug")]
+    MoveBallManual { direction: Direction },
     /// Event to update the game state with a time delta.
-    Tick { dt: f64 },
+    Tick,
 }
 
 /// Represents the options for configuring the game.
@@ -152,7 +154,7 @@ impl GameOptions {
         let paddle_h = self.area.height / 50.0;
         let paddle_w = self.area.width / 10.0;
         let paddle_area = Rectf64 {
-            x: self.area.x + WALL_W,
+            x: self.area.width / 2. - paddle_w / 2. + WALL_W,
             y: self.area.y + WALL_H,
             width: paddle_w,
             height: paddle_h,
@@ -187,7 +189,7 @@ impl GameOptions {
         );
         let radius = 3.;
         let ball = Ball::new(
-            paddle_area.left() + 2. * radius,
+            paddle_area.left() + paddle_area.width / 2. - radius,
             paddle_area.top() + radius,
             radius,
             self.ball_speed,
@@ -198,7 +200,7 @@ impl GameOptions {
                 x: self.area.x,
                 y: self.area.y,
                 width: self.area.width,
-                height: 1.0,
+                height: WALL_H,
             },
             Color::Gray,
         );
@@ -234,7 +236,7 @@ pub struct Game {
     /// The bricks in the game.
     bricks: Vec<Brick>,
     /// The current score of the game.
-    score: u16,
+    score: usize,
 }
 
 impl Game {
@@ -255,9 +257,17 @@ impl Game {
                 Direction::Right => {
                     self.paddle.mov(Direction::Right);
                 }
+                #[cfg(feature = "debug")]
+                _ => unreachable!(),
             },
-            GameEvent::Tick { dt } => {
-                self.move_ball(dt);
+            #[cfg(feature = "debug")]
+            GameEvent::MoveBallManual { direction } => {
+                self.ball.mov_dir(direction);
+                self.check_collisions();
+            }
+            GameEvent::Tick => {
+                self.ball.mov();
+                self.check_collisions();
             }
         }
     }
@@ -270,35 +280,33 @@ impl Game {
     /// TODO: maybe I need to predict collisions
     /// instead of acting upon them, but for now
     /// this implementation is ok.
-    pub fn move_ball(&mut self, dt: f64) {
+    pub fn check_collisions(&mut self) {
+        // Process ball collision with the walls and the paddle.
+        self.ball.collision(&mut self.walls.left);
+        self.ball.collision(&mut self.walls.right);
+        self.ball.collision(&mut self.walls.top);
+        self.ball.collision(&mut self.paddle);
+
         // Move the ball and check if it possibly
         // fell down. If yes - the game is lost.
-        self.ball.mov(dt);
-        if self.bottom.collide(&mut self.ball) {
+        if self.ball.collision(&mut self.bottom) {
             self.state = GameState::Lost;
             return;
         }
 
-        // Check if the ball collided with any of the bricks
-        // and if it did - remove those.
-        let mut bricks = vec![];
-        for mut brick in std::mem::take(&mut self.bricks).into_iter() {
-            if brick.collide(&mut self.ball) {
-                self.score += 1;
-            } else {
-                bricks.push(brick);
-            }
-        }
+        // Check if the ball collided with any of the "closest" bricks and if it did - remove those.
+        self.bricks
+            .sort_by(|b1, b2| self.ball.dsquared(b1).total_cmp(&self.ball.dsquared(b2)));
+        let (closest, mut other): (Vec<_>, Vec<_>) = std::mem::take(&mut self.bricks)
+            .into_iter()
+            .partition(|brick| self.ball.collision(brick));
+        self.score += closest.len();
+
         // If no bricks left - the game is won.
-        if bricks.is_empty() {
+        if other.is_empty() {
             self.state = GameState::Won;
         }
-        std::mem::swap(&mut self.bricks, &mut bricks);
-
-        // Process ball collision with the walls and the
-        // paddle.
-        self.walls.collide(&mut self.ball);
-        self.paddle.collide(&mut self.ball);
+        std::mem::swap(&mut self.bricks, &mut other);
     }
 }
 

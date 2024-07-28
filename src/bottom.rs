@@ -32,8 +32,10 @@ impl EllasticCollision for Bottom {
     ///
     /// # Returns
     /// `true` if the ball intersects with the bottom boundary, `false` otherwise.
-    fn collide(&mut self, ball: &mut Ball) -> bool {
-        ball.intersects(&self.area)
+    fn collide(&self, _ball: &mut Ball) {}
+
+    fn area(&self) -> Rectf64 {
+        self.area.clone()
     }
 }
 
@@ -46,6 +48,6 @@ impl Shape for Bottom {
             y2: self.area.bottom(),
             color: self.color,
         }
-            .draw(painter);
+        .draw(painter);
     }
 }
